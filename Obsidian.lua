@@ -342,8 +342,8 @@ local Templates = {
         FooterButtons = {}
     },
     Loading = {
-        Title = "No Title",
-        Icon = nil,
+        Title = "mspaint",
+        Icon = 95816097006870,
         IconSize = UDim2.fromOffset(30, 30),
 
         LoadingIcon = CustomImageManager.GetAsset("LoadingIcon"),
@@ -354,6 +354,7 @@ local Templates = {
         TotalSteps = 10,
 
         ShowSidebar = false,
+        AutoResizeHeight = false,
 
         WindowWidth = 450,
         WindowHeight = 275,
@@ -1027,8 +1028,7 @@ function Library:GiveSignal(Connection: RBXScriptConnection | RBXScriptSignal)
 end
 
 function IsValidCustomIcon(Icon: string)
-    return typeof(Icon) == "string"
-        and (Icon:match("rbxasset") or Icon:match("roblox%.com/asset/%?id=") or Icon:match("rbxthumb://type="))
+    return typeof(Icon) == "string" and (Icon:match("rbxasset") or Icon:match("roblox%.com/asset/%?id=") or Icon:match("rbxthumb://type="))
 end
 
 type Icon = {
@@ -1063,6 +1063,14 @@ function Library:GetIcon(IconName: string)
 end
 
 function Library:GetCustomIcon(IconName: string): any
+    if not IconName then
+        return nil
+    end
+
+    if tonumber(IconName) then
+        IconName = string.format("rbxassetid://%s", tostring(IconName))
+    end
+
     local CustomIcon = IsValidCustomIcon(IconName)
     if CustomIcon then
         return {
@@ -1078,12 +1086,7 @@ function Library:GetCustomIcon(IconName: string): any
         return LucideIcon
     end
 
-    return {
-        Url = if tonumber(IconName) then string.format("rbxassetid://%s", tostring(IconName)) else IconName,
-        ImageRectOffset = Vector2.zero,
-        ImageRectSize = Vector2.zero,
-        Custom = true,
-    }
+    return nil
 end
 
 function Library:Validate(Table: { [string]: any }, Template: { [string]: any }): { [string]: any }
@@ -1181,7 +1184,7 @@ end
 
 local ScreenGui = New("ScreenGui", {
     Name = "Obsidian",
-    DisplayOrder = 999,
+    DisplayOrder = 998,
     ResetOnSpawn = false,
 })
 ParentUI(ScreenGui)
@@ -1647,6 +1650,51 @@ function Library:AddDraggableButton(Text: string, Func, ExcludeScaling: boolean?
         Button.Size = UDim2.fromOffset(X * 2, Y * 2)
     end
     Table:SetText(Text)
+
+    return Table
+end
+
+function Library:AddDraggableIconButton(Icon: string, Func, ExcludeScaling: boolean?)
+    local Table = {}
+
+    local Button = New("ImageButton", {
+        BackgroundColor3 = "BackgroundColor",
+        Position = UDim2.fromOffset(6, 6),
+        ZIndex = 10,
+        Parent = ScreenGui,
+    })
+    table.insert(
+        Library.Corners, 
+        New("UICorner", {
+            CornerRadius = UDim.new(0, Library.CornerRadius),
+            Parent = Button,
+        })
+    )
+    if not ExcludeScaling then
+        table.insert(
+            Library.Scales,
+            New("UIScale", {
+                Parent = Button,
+            })
+        )
+    end
+    Library:AddOutline(Button)
+
+    Button.MouseButton1Click:Connect(function()
+        Library:SafeCallback(Func, Table)
+    end)
+    Library:MakeDraggable(Button, Button, true)
+
+    Table.Button = Button
+
+    function Table:SetIcon(Icon: string)
+        local GetIcon = Library:GetIcon(Icon)
+        if GetIcon then
+            Button.Image = GetIcon.Url
+        end
+        Button.Size = UDim2.fromOffset(16 * 2, 16 * 2)
+    end
+    Table:SetIcon(Icon)
 
     return Table
 end
@@ -3336,10 +3384,16 @@ do
 
         Groupbox:Resize()
 
-        table.insert(Groupbox.Elements, {
+        local Divider = {
             Holder = Holder,
+            Text = Text,
+            MarginTop = MarginTop,
+            MarginBottom = MarginBottom,
             Type = "Divider",
-        })
+        }
+
+        table.insert(Groupbox.Elements, Divider)
+        return Divider
     end
 
     function Funcs:AddLabel(...)
@@ -3385,7 +3439,6 @@ do
             TextSize = Data.Size,
             TextWrapped = Label.DoesWrap,
             TextXAlignment = Groupbox.IsKeyTab and Enum.TextXAlignment.Center or Enum.TextXAlignment.Left,
-            TextYAlignment = Enum.TextYAlignment.Top,
             Parent = Container,
         })
 
@@ -3782,6 +3835,7 @@ do
             Visible = Info.Visible,
             Addons = {},
 
+            Variant = "Checkbox",
             Type = "Toggle",
         }
 
@@ -3988,6 +4042,7 @@ do
             Visible = Info.Visible,
             Addons = {},
 
+            Variant = "Switch",
             Type = "Toggle",
         }
 
@@ -4394,6 +4449,7 @@ do
             Suffix = Info.Suffix,
             Compact = Info.Compact,
             Rounding = Info.Rounding,
+            HideMax = Info.HideMax,
 
             Tooltip = Info.Tooltip,
             DisabledTooltip = Info.DisabledTooltip,
@@ -6109,7 +6165,7 @@ function Library:Notify(...)
                 Position = UDim2.new(0, 0, 0.5, 1),
                 Size = UDim2.fromOffset(15, 15),
                 Image = ParsedIcon.Url,
-                ImageColor3 = Data.IconColor or "FontColor",
+                ImageColor3 = Data.IconColor or "AccentColor",
                 ImageRectOffset = ParsedIcon.ImageRectOffset,
                 ImageRectSize = ParsedIcon.ImageRectSize,
                 Parent = TitleContainer,
@@ -6132,6 +6188,7 @@ function Library:Notify(...)
             Position = UDim2.new(0, (Data.Icon and 21 or 0), 0.5, 0),
             Size = UDim2.fromScale(0, 0),
             Text = Data.Title,
+            TextColor3 = "AccentColor",
             TextSize = 15,
             TextXAlignment = Enum.TextXAlignment.Left,
             TextYAlignment = Enum.TextYAlignment.Center,
@@ -7080,6 +7137,7 @@ function Library:CreateWindow(WindowInfo)
             Groupboxes = {},
             Tabboxes = {},
             DependencyGroupboxes = {},
+            Description = Description,
             Sides = {
                 TabLeft,
                 TabRight,
@@ -7792,6 +7850,7 @@ function Library:CreateWindow(WindowInfo)
         --// Tab Table \\--
         local Tab = {
             Elements = {},
+            Description = Description,
             IsKeyTab = true,
         }
 
@@ -8637,11 +8696,13 @@ function Library:CreateLoading(LoadingInfo)
         TotalSteps = LoadingInfo.TotalSteps,
 
         ShowSidebar = LoadingInfo.ShowSidebar,
+        AutoResizeHeight = LoadingInfo.AutoResizeHeight,
         IsError = false,
         Destroyed = false,
 
         WindowWidth = LoadingInfo.WindowWidth,
         WindowHeight = LoadingInfo.WindowHeight,
+        BaseWindowHeight = LoadingInfo.WindowHeight,
         WindowErrorHeight = LoadingInfo.WindowHeight,
 
         ContentWidth = LoadingInfo.ContentWidth,
@@ -8829,20 +8890,22 @@ function Library:CreateLoading(LoadingInfo)
 
     local MessageLabel = New("TextLabel", {
         BackgroundTransparency = 1,
-        AutomaticSize = Enum.AutomaticSize.XY,
-        Size = UDim2.fromOffset(0, 0),
+        AutomaticSize = Loading.AutoResizeHeight and Enum.AutomaticSize.Y or Enum.AutomaticSize.XY,
+        Size = Loading.AutoResizeHeight and UDim2.new(1, -60, 0, 0) or UDim2.fromOffset(0, 0),
         Text = "",
         TextSize = 18,
+        TextWrapped = Loading.AutoResizeHeight,
         Parent = InnerContent,
     })
 
     local DescriptionLabel = New("TextLabel", {
         BackgroundTransparency = 1,
-        AutomaticSize = Enum.AutomaticSize.XY,
-        Size = UDim2.fromOffset(0, 0),
+        AutomaticSize = Loading.AutoResizeHeight and Enum.AutomaticSize.Y or Enum.AutomaticSize.XY,
+        Size = Loading.AutoResizeHeight and UDim2.new(1, -60, 0, 0) or UDim2.fromOffset(0, 0),
         Text = "",
         TextSize = 14,
         TextTransparency = 0.5,
+        TextWrapped = Loading.AutoResizeHeight,
         Parent = InnerContent,
     })
 
@@ -9025,12 +9088,35 @@ function Library:CreateLoading(LoadingInfo)
     end
 
     --// Content Page \\--
+    function Loading:RecalculateLoadingHeight()
+        if not Loading.AutoResizeHeight then
+            return
+        end
+
+        local RequiredHeight = 
+              49 -- TopBar
+            + 48 -- Padding
+            + InnerContent.UIListLayout.AbsoluteContentSize.Y
+
+        Loading.WindowHeight = math.max(Loading.BaseWindowHeight, RequiredHeight)
+    end
+
     function Loading:SetMessage(Text)
         MessageLabel.Text = Text
+
+        if Loading.AutoResizeHeight then
+            Loading:RecalculateLoadingHeight()
+            Loading:UpdateLayout()
+        end
     end
 
     function Loading:SetDescription(Text)
         DescriptionLabel.Text = Text
+
+        if Loading.AutoResizeHeight then
+            Loading:RecalculateLoadingHeight()
+            Loading:UpdateLayout()
+        end
     end
 
     function Loading:SetLoadingIcon(Icon)
