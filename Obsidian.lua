@@ -1178,7 +1178,7 @@ local function ParentUI(UI: Instance, SkipHiddenUI: boolean?)
         return
     end
 
-    pcall(protectgui, UI)
+    --pcall(protectgui, UI)
     SafeParentUI(UI, gethui)
 end
 
@@ -1187,7 +1187,7 @@ local ScreenGui = New("ScreenGui", {
     DisplayOrder = 998,
     ResetOnSpawn = false,
 })
-ParentUI(ScreenGui)
+ParentUI(ScreenGui, true)
 Library.ScreenGui = ScreenGui
 
 ScreenGui.DescendantRemoving:Connect(function(Instance)
@@ -1657,11 +1657,17 @@ end
 function Library:AddDraggableIconButton(Icon: string, Func, ExcludeScaling: boolean?)
     local Table = {}
 
-    local Button = New("ImageButton", {
+    local Button = New("TextButton", {
         BackgroundColor3 = "BackgroundColor",
         Position = UDim2.fromOffset(6, 6),
         ZIndex = 10,
         Parent = ScreenGui,
+    })
+    local Icon = New("ImageLabel", {
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        BackgroundTransparency = 1,
+        Position = UDim2.fromScale(0.5, 0.5),
+        Parent = Button,
     })
     table.insert(
         Library.Corners, 
@@ -1689,10 +1695,14 @@ function Library:AddDraggableIconButton(Icon: string, Func, ExcludeScaling: bool
 
     function Table:SetIcon(Icon: string)
         local GetIcon = Library:GetIcon(Icon)
+        local X, Y = Library:GetTextBounds("Button", Library.Scheme.Font, 16)
+
         if GetIcon then
-            Button.Image = GetIcon.Url
+            Icon.Image = GetIcon.Url
         end
-        Button.Size = UDim2.fromOffset(16 * 2, 16 * 2)
+
+        Button.Size = UDim2.fromOffset(Y * 2, Y * 2)
+        Icon.Size = UDim2.new(1, -Y, 1, -Y)
     end
     Table:SetIcon(Icon)
 
@@ -8736,6 +8746,7 @@ function Library:CreateLoading(LoadingInfo)
         AutoButtonColor = false,
         Parent = ScreenGui,
     })
+
     Library:AddOutline(MainFrame)
     table.insert(Library.Corners, New("UICorner", { CornerRadius = UDim.new(0, Library.CornerRadius), Parent = MainFrame }))
     
