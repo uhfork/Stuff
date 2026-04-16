@@ -1187,7 +1187,7 @@ local ScreenGui = New("ScreenGui", {
     DisplayOrder = 998,
     ResetOnSpawn = false,
 })
-ParentUI(ScreenGui, true)
+ParentUI(ScreenGui)
 Library.ScreenGui = ScreenGui
 
 ScreenGui.DescendantRemoving:Connect(function(Instance)
