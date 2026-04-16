@@ -1661,9 +1661,10 @@ function Library:AddDraggableIconButton(Icon: string, Func, ExcludeScaling: bool
         BackgroundColor3 = "BackgroundColor",
         Position = UDim2.fromOffset(6, 6),
         ZIndex = 10,
+        Text = "",
         Parent = ScreenGui,
     })
-    local Icon = New("ImageLabel", {
+    local ButtonImage = New("ImageLabel", {
         AnchorPoint = Vector2.new(0.5, 0.5),
         BackgroundTransparency = 1,
         Position = UDim2.fromScale(0.5, 0.5),
@@ -1674,6 +1675,13 @@ function Library:AddDraggableIconButton(Icon: string, Func, ExcludeScaling: bool
         New("UICorner", {
             CornerRadius = UDim.new(0, Library.CornerRadius),
             Parent = Button,
+        })
+    )
+    table.insert(
+        Library.Corners, 
+        New("UICorner", {
+            CornerRadius = UDim.new(0, Library.CornerRadius),
+            Parent = ButtonImage,
         })
     )
     if not ExcludeScaling then
@@ -1693,16 +1701,18 @@ function Library:AddDraggableIconButton(Icon: string, Func, ExcludeScaling: bool
 
     Table.Button = Button
 
-    function Table:SetIcon(Icon: string)
-        local GetIcon = Library:GetIcon(Icon)
-        local X, Y = Library:GetTextBounds("Button", Library.Scheme.Font, 16)
+    function Table:SetIcon(ImageId: string)
+        local Icon = Library:GetCustomIcon(ImageId)
+        assert(Icon, "Image must be a valid Roblox asset or a valid URL or a valid lucide icon.")
 
-        if GetIcon then
-            Icon.Image = GetIcon.Url
+        if Icon then
+            ButtonImage.Image = Icon.Url
+            ButtonImage.ImageRectOffset = Icon.ImageRectOffset,
+            ButtonImage.ImageRectSize = Icon.ImageRectSize,
         end
 
-        Button.Size = UDim2.fromOffset(Y * 2, Y * 2)
-        Icon.Size = UDim2.new(1, -Y, 1, -Y)
+        Button.Size = UDim2.fromOffset(16, 16)
+        ButtonImage.Size = UDim2.new(1, -6, 1, -6)
     end
     Table:SetIcon(Icon)
 
